@@ -208,9 +208,9 @@ jupyter nbconvert --to notebook --execute notebooks/Module3_RealTime_Fraud_Detec
 After training in the notebook, save model artifacts to `models/` (example in notebook: joblib / pickle). When running real-time demo notebook, ensure the model file (e.g., `models/fraud_detector_v1.joblib`) exists.
 
 ### 8. Optional: Serve model locally
-Install Flask and other serving deps (if not already in Requirements.txt), then run a simple app to expose a scoring endpoint:
+Install Streamlit and other serving deps (if not already in Requirements.txt), then run a simple app to expose a scoring endpoint:
 ```bash
-pip install flask
+pip install streamlit
 python Deployment/app.py   # if you add a sample app
 ```
 
@@ -306,11 +306,11 @@ Example patterns to serve the model:
 
 Example Flask skeleton:
 ```python
-from flask import Flask, request, jsonify
+from streamlit import streamlit, request, jsonify
 import joblib
 import pandas as pd
 
-app = Flask(__name__)
+app = streamlit(__name__)
 model = joblib.load('models/fraud_detector_v1.joblib')
 
 @app.route('/score', methods=['POST'])
