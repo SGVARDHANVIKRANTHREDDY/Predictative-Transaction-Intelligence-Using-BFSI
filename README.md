@@ -133,91 +133,247 @@ This mirrors how **real BFSI analytics pipelines** operate.
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup
 
-### 🔹 Prerequisites
+Follow these steps to prepare a reproducible development environment and run the notebooks locally.
 
-- Python 3.x
-- Basic understanding of machine learning concepts
-- Required Python libraries (as listed in `requirements.txt`, if available)
-
-### 🔹 Installation Steps
-
+### 1. Clone the repository
 ```bash
 git clone https://github.com/SGVARDHANVIKRANTHREDDY/Predictative-Transaction-Intelligence-Using-BFSI.git
 cd Predictative-Transaction-Intelligence-Using-BFSI
-pip install -r requirements.txt
 ```
 
----
+### 2. Create and activate a Python virtual environment (recommended)
 
-## ▶️ Code Usage Examples
-
-### Running Model Training
-
+Linux / macOS
 ```bash
-python train_model.py
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### Running Predictions
-
-```bash
-python predict.py
+Windows (PowerShell)
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
 ```
 
-### Notebook Execution
-
+Alternative: create a conda environment
 ```bash
+conda create -n pti-bfsi python=3.10 -y
+conda activate pti-bfsi
+```
+
+### 3. Install dependencies
+Install using the provided requirements file:
+```bash
+pip install --upgrade pip
+pip install -r Requirements.txt
+```
+
+If you used conda, you can still use pip after activating the conda environment. To pin versions into a conda YAML file:
+```bash
+pip freeze > pinned-requirements.txt
+python -m pip install -r Requirements.txt
+conda env export --name pti-bfsi > environment.yml
+```
+
+### 4. Jupyter Notebook / Lab
+Install and launch Jupyter:
+```bash
+pip install jupyterlab jupyter
+jupyter lab
+# or
 jupyter notebook
 ```
+Open the notebooks in the `notebooks/` folder:
+- `Module1_EDA.ipynb` — exploratory data analysis and preprocessing
+- `Module3_RealTime_Fraud_Detection.ipynb` — inference / demo
 
-Open the relevant notebook and execute cells sequentially.
+### 5. Prepare data and directories
+- Place your raw transactional CSV(s) under the `Dataset/` directory (e.g., `Dataset/raw/transactions.csv`).
+- Create processed and model directories if they do not exist:
+```bash
+mkdir -p Dataset/processed models EDA_Visuals
+```
+- Ensure notebooks reference the correct dataset filename and paths. Update the data load cell if your filenames or column names differ.
 
----
+### 6. Run notebooks non-interactively (optional)
+Execute notebooks end-to-end from the command line:
+```bash
+jupyter nbconvert --to notebook --execute notebooks/Module1_EDA.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/Module3_RealTime_Fraud_Detection.ipynb --inplace
+```
 
-## 📊 Model Intelligence & Outputs
+### 7. Save and load model artifacts
+After training in the notebook, save model artifacts to `models/` (example in notebook: joblib / pickle). When running real-time demo notebook, ensure the model file (e.g., `models/fraud_detector_v1.joblib`) exists.
 
-The system can produce:
+### 8. Optional: Serve model locally
+Install Flask and other serving deps (if not already in Requirements.txt), then run a simple app to expose a scoring endpoint:
+```bash
+pip install flask
+python Deployment/app.py   # if you add a sample app
+```
 
-- Transaction behavior predictions
-- Risk or anomaly indicators
-- Pattern-based insights derived from historical data
+### 9. GPU / performance notes (optional)
+- If you intend to use GPU-accelerated libraries (TensorFlow, PyTorch), install the appropriate GPU builds and drivers per their official docs.
+- For scikit-learn CPU training, ensure `n_jobs=-1` for parallelism if you want multi-core usage.
 
-Outputs are designed to be:
-
-- Interpretable
-- Reproducible
-- Relevant to BFSI analytics use cases
-
----
-
-## 🧪 Validation & Best Practices
-
-- Clean and validated input data
-- Modular ML pipeline
-- Separation of training and inference
-- Reusable and extensible code structure
-- Focus on correctness over shortcuts
-
----
-
-## 🚀 Future Enhancements
-
-- Advanced anomaly detection algorithms
-- Real-time transaction streaming simulation
-- Model explainability (SHAP / LIME)
-- REST API for model inference
-- Role-based dashboards
-- Integration with cloud ML pipelines
-- Improved frontend visualization
+### 10. Troubleshooting
+- Module not found: ensure your virtual environment is activated and you installed Requirements.txt.
+- Notebook kernel crashes: check memory usage and reduce sample size or use smaller n_estimators during model development.
+- File not found: verify paths inside the notebook match `Dataset/` and `models/`.
 
 ---
 
-## 🏁 Professional Notes
+## Data
 
-- Designed with BFSI industry mindset
-- Emphasizes data-driven decision systems
-- Suitable as a fintech / BFSI internship project
-- Demonstrates understanding of ML lifecycle in financial systems
+- Place your transaction dataset(s) in `Dataset/`. The notebooks expect a CSV or similar file(s) inside that folder.
+- Typical columns expected by the notebooks (common BFSI transaction features):
+  - transaction_id, timestamp, customer_id, merchant_id, amount, currency, channel, device_id, location, is_fraud (label)
+- If your dataset uses different column names, update the preprocessing steps in `notebooks/Module1_EDA.ipynb` (search for the data load cell).
+
+---
+
+## How to run the notebooks
+
+Open `notebooks/Module1_EDA.ipynb` and `notebooks/Module3_RealTime_Fraud_Detection.ipynb` in Jupyter Lab / Notebook. Execution order:
+
+1. Module 1 — EDA & Preprocessing
+   - Purpose: understand class imbalance, missing values, distributions, and create base features.
+   - Steps:
+     - Load the CSV from `Dataset/`
+     - Run cleaning & feature engineering cells
+     - Save processed data to disk (e.g., `Dataset/processed_train.csv`) for training
+
+2. Module 3 — Real-time Fraud Detection Demo
+   - Purpose: load saved model artifact and demonstrate scoring on streaming or batch transactions.
+   - Steps:
+     - Ensure `models/` contains a trained model file (e.g., `models/model.joblib` or `models/model.pkl`)
+     - Execute cells demonstrating model loading, preprocessing of incoming transaction(s), and inference.
+     - Demonstrates metrics and example alert generation.
+
+Headless execution (run notebooks end-to-end):
+```bash
+jupyter nbconvert --to notebook --execute notebooks/Module1_EDA.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/Module3_RealTime_Fraud_Detection.ipynb --inplace
+```
+
+---
+
+## Typical model training & saving (example)
+
+The repo contains notebooks that perform training. If you prefer a script, here is a minimal pattern to reproduce training and saving:
+
+Example (pseudo-code):
+```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+import joblib
+
+# load processed data
+df = pd.read_csv('Dataset/processed_train.csv')
+X = df.drop(columns=['is_fraud', 'transaction_id'])
+y = df['is_fraud']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
+model.fit(X_train, y_train)
+
+# evaluate
+pred = model.predict(X_test)
+print(classification_report(y_test, pred))
+
+# save artifact
+joblib.dump(model, 'models/fraud_detector_v1.joblib')
+```
+
+Adapt the features and preprocessing to match what's implemented in the notebooks.
+
+---
+
+## Real‑time inference / Serving
+
+Example patterns to serve the model:
+
+- Lightweight Flask app:
+  - Load joblib model at startup
+  - Expose a /score endpoint which accepts JSON transaction(s), performs the same preprocessing used in training, and returns a score and label
+- Message-based streaming:
+  - Consume transactions from Kafka / RabbitMQ, preprocess, score, and publish alerts
+
+Example Flask skeleton:
+```python
+from flask import Flask, request, jsonify
+import joblib
+import pandas as pd
+
+app = Flask(__name__)
+model = joblib.load('models/fraud_detector_v1.joblib')
+
+@app.route('/score', methods=['POST'])
+def score():
+    payload = request.json  # single transaction or list
+    df = pd.DataFrame([payload])  # adapt to actual preprocessing
+    # preprocess here (same functions used in training)
+    score = model.predict_proba(df)[:,1]
+    return jsonify({'score': float(score[0])})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=9000)
+```
+
+Place service scaffolding in `Deployment/` if you want Docker or k8s manifests.
+
+---
+
+## Evaluation, metrics & monitoring
+
+Important metrics for fraud detection:
+- Precision, Recall, F1-score (pay special attention to recall for fraud detection)
+- ROC-AUC and PR-AUC (useful for imbalanced data)
+- Confusion matrix and cost-based metrics (false positives vs false negatives)
+
+Monitoring:
+- Track drift in feature distributions and model performance over time.
+- Log predictions and feedback labels (when available) to enable periodic retraining.
+- Alert when performance drops below thresholds.
+
+---
+
+## Reproducibility & best practices
+
+- Keep raw data in `Dataset/raw/` and processed in `Dataset/processed/`.
+- Use versioned model artifacts (e.g., models/fraud_detector_v1.joblib) and log metadata (training date, hyperparameters).
+- Record experiments (e.g., MLflow or simple CSV/JSON experiment logs).
+- Use unit tests for preprocessing functions and a small deterministic dataset for CI.
+
+---
+
+## Notes about repository files
+
+- notebooks/Module1_EDA.ipynb — start here to explore data and build preprocessing pipelines.
+- notebooks/Module3_RealTime_Fraud_Detection.ipynb — demonstrates inference and scoring flow; useful as a blueprint for production.
+- Requirements.txt — install to reproduce environment.
+- models/ — store model artifacts here after training.
+- Deployment/ — add containerization or serving scripts here for production rollout.
+- EDA_Visuals/ — images & visual analysis results used to communicate findings.
+
+---
+
+## Contributing
+
+1. Fork the repository and create feature branches.
+2. Keep notebooks reproducible: clear outputs before committing or keep a separate `notebooks/` execution history for review.
+3. Add tests for preprocessing and inference code.
+4. Open pull requests describing changes and the impact on model behavior or data schema.
+
+---
+
+## License
+
+This project includes a LICENSE file in the repository root. Please follow the terms in that file for reuse and distribution.
 
 ---
