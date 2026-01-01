@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 
-GEN_API_KEY = "AIzaSyD3B-M8LrF306rJhPrLuhUVDkx6NUDwTjI"  # Replace with your key!
+GEN_API_KEY = "<YOUR API KEY>"  # Replace with your key!
 genai.configure(api_key=GEN_API_KEY)
 
 PROJECT_DESCRIPTION = """
@@ -96,3 +96,4 @@ def chatbot_ui():
 
 if __name__ == "__main__":
     chatbot_ui()
+
